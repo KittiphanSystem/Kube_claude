@@ -1,0 +1,156 @@
+# platform/ingress-nginx/ingress-nginx.yaml
+# แยก ingress class สำหรับ admin และ tenant
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-nginx
+---
+# IngressClass สำหรับ Admin Portal (admin.example.com, argo.example.com, grafana.example.com)
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: nginx-admin
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "false"
+spec:
+  controller: k8s.io/ingress-nginx-admin
+---
+# IngressClass สำหรับ Tenant Apps (*.example.com)
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: nginx
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+spec:
+  controller: k8s.io/ingress-nginx
+---
+# Deployment: Admin Ingress Controller
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-nginx-admin
+  namespace: ingress-nginx
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: admin
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/instance: admin
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ingress-nginx
+        app.kubernetes.io/instance: admin
+    spec:
+      serviceAccountName: ingress-nginx
+      containers:
+        - name: controller
+          image: registry.k8s.io/ingress-nginx/controller:v1.9.5
+          args:
+            - /nginx-ingress-controller
+            - --ingress-class=nginx-admin
+            - --controller-class=k8s.io/ingress-nginx-admin
+            - --election-id=ingress-nginx-admin
+            - --watch-namespace=""  # Watch all namespaces for admin class
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+# Service: Admin LoadBalancer (dedicated IP สำหรับ admin tools)
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-nginx-admin-lb
+  namespace: ingress-nginx
+  annotations:
+    # สำหรับ AWS: ใส่ annotation เพิ่ม เช่น service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: admin
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
+---
+# Deployment: Tenant Ingress Controller (แยก instance ต่างหาก)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-nginx-tenant
+  namespace: ingress-nginx
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: tenant
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/instance: tenant
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ingress-nginx
+        app.kubernetes.io/instance: tenant
+    spec:
+      serviceAccountName: ingress-nginx
+      containers:
+        - name: controller
+          image: registry.k8s.io/ingress-nginx/controller:v1.9.5
+          args:
+            - /nginx-ingress-controller
+            - --ingress-class=nginx
+            - --controller-class=k8s.io/ingress-nginx
+            - --election-id=ingress-nginx-tenant
+            - --watch-namespace=""
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+---
+# Service: Tenant LoadBalancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-nginx-tenant-lb
+  namespace: ingress-nginx
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: tenant
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443

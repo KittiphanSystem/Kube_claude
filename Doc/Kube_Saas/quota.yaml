@@ -1,0 +1,30 @@
+# tenants/tenant-template/bootstrap/quota.yaml
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: tenant-TENANT_NAME-quota
+  namespace: tenant-TENANT_NAME
+  labels:
+    kube-saas/tenant: TENANT_NAME
+    kube-saas/plan: PLAN_NAME
+spec:
+  hard:
+    # CPU (จาก plan)
+    requests.cpu: "CPU_REQUESTS"
+    limits.cpu: "CPU_LIMITS"
+    # Memory (จาก plan)
+    requests.memory: MEM_REQUESTS
+    limits.memory: MEM_LIMITS
+    # Pods
+    pods: "MAX_PODS"
+    # Storage
+    persistentvolumeclaims: "MAX_PVC"
+    requests.storage: MAX_STORAGE
+    # Services
+    services: "10"
+    services.loadbalancers: "0"   # ห้าม tenant สร้าง LB ตรงเอง
+    services.nodeports: "0"       # ห้าม tenant ใช้ NodePort
+    # Secrets/ConfigMaps
+    secrets: "50"
+    configmaps: "50"

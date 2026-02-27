@@ -1,0 +1,23 @@
+# argocd/applications/platform-services.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-services
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/KittiphanSystem/Kube_claude.git
+    targetRevision: main
+    path: platform
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true

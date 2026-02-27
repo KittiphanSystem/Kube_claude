@@ -1,0 +1,101 @@
+# tenants/tenant-template/bootstrap/appproject.yaml
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: tenant-TENANT_NAME
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    kube-saas/tenant: TENANT_NAME
+    kube-saas/plan: PLAN_NAME
+spec:
+  description: "Tenant TENANT_NAME — locked to own namespace + repo"
+  sourceRepos:
+    - TENANT_REPO_URL
+  destinations:
+    # Deploy ได้เฉพาะ namespace ตัวเอง เท่านั้น
+    - namespace: tenant-TENANT_NAME
+      server: https://kubernetes.default.svc
+  # ห้าม cluster-scoped resources เด็ดขาด
+  clusterResourceWhitelist: []
+  # อนุญาตเฉพาะ resource ที่ tenant ต้องใช้จริง
+  namespaceResourceWhitelist:
+    - group: "apps"
+      kind: Deployment
+    - group: "apps"
+      kind: StatefulSet
+    - group: "apps"
+      kind: ReplicaSet
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Secret
+    - group: ""
+      kind: ServiceAccount
+    - group: ""
+      kind: PersistentVolumeClaim
+    - group: "networking.k8s.io"
+      kind: Ingress
+    - group: "autoscaling"
+      kind: HorizontalPodAutoscaler
+    - group: "batch"
+      kind: Job
+    - group: "batch"
+      kind: CronJob
+  roles:
+    - name: viewer
+      description: "Tenant TENANT_NAME read-only"
+      policies:
+        - p, proj:tenant-TENANT_NAME:viewer, applications, get, tenant-TENANT_NAME/*, allow
+      groups:
+        - tenant-TENANT_NAME-viewers
+    - name: deployer
+      description: "Tenant TENANT_NAME can sync"
+      policies:
+        - p, proj:tenant-TENANT_NAME:deployer, applications, sync, tenant-TENANT_NAME/*, allow
+        - p, proj:tenant-TENANT_NAME:deployer, applications, get, tenant-TENANT_NAME/*, allow
+        - p, proj:tenant-TENANT_NAME:deployer, applications, action/*, tenant-TENANT_NAME/*, allow
+      groups:
+        - tenant-TENANT_NAME-deployers
+---
+# tenants/tenant-template/bootstrap/tenant-app.yaml
+# ArgoCD Application ที่ชี้ไป repo ของ tenant
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tenant-TENANT_NAME-apps
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+    kube-saas/tenant: TENANT_NAME
+spec:
+  project: tenant-TENANT_NAME
+  source:
+    repoURL: TENANT_REPO_URL
+    targetRevision: main
+    path: environments/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tenant-TENANT_NAME
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false   # Namespace ถูกสร้างแล้วจาก bootstrap
+      - PrunePropagationPolicy=foreground
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  # Health checks
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas  # ไม่ override HPA scaling

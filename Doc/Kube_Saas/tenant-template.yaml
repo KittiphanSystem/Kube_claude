@@ -1,0 +1,62 @@
+# argocd/projects/tenant-template.yaml
+# Template สำหรับ tenant — ล็อก scope เฉพาะ namespace + repo ของตัวเอง
+# blueprintctl จะ copy และ replace ชื่อ tenant อัตโนมัติ
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: tenant-TENANT_NAME
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    kube-saas/tenant: "TENANT_NAME"
+    kube-saas/plan: "PLAN_NAME"
+spec:
+  description: "Tenant TENANT_NAME — locked to own namespace + repo"
+  sourceRepos:
+    - TENANT_REPO_URL
+  destinations:
+    # Tenant deploy ได้เฉพาะ namespace ตัวเอง เท่านั้น
+    - namespace: tenant-TENANT_NAME
+      server: https://kubernetes.default.svc
+  # ห้าม cluster-scoped resources เด็ดขาด
+  clusterResourceWhitelist: []
+  # อนุญาตเฉพาะ resource ที่ tenant ต้องใช้จริง
+  namespaceResourceWhitelist:
+    - group: "apps"
+      kind: Deployment
+    - group: "apps"
+      kind: StatefulSet
+    - group: "apps"
+      kind: ReplicaSet
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Secret
+    - group: ""
+      kind: ServiceAccount
+    - group: ""
+      kind: PersistentVolumeClaim
+    - group: "networking.k8s.io"
+      kind: Ingress
+    - group: "autoscaling"
+      kind: HorizontalPodAutoscaler
+    - group: "batch"
+      kind: Job
+    - group: "batch"
+      kind: CronJob
+  roles:
+    - name: tenant-viewer
+      description: Tenant read-only access
+      policies:
+        - p, proj:tenant-TENANT_NAME:tenant-viewer, applications, get, tenant-TENANT_NAME/*, allow
+      groups:
+        - tenant-TENANT_NAME-viewers
+    - name: tenant-deployer
+      description: Tenant can sync apps
+      policies:
+        - p, proj:tenant-TENANT_NAME:tenant-deployer, applications, sync, tenant-TENANT_NAME/*, allow
+        - p, proj:tenant-TENANT_NAME:tenant-deployer, applications, get, tenant-TENANT_NAME/*, allow
+      groups:
+        - tenant-TENANT_NAME-deployers

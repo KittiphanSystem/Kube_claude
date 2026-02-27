@@ -1,0 +1,24 @@
+# tenants/tenant-template/bootstrap/
+# ไฟล์นี้เป็น template — blueprintctl จะ copy + replace TENANT_NAME, PLAN, etc.
+# ============================================================
+# IMPORTANT: ทุกไฟล์นี้ถูก generate อัตโนมัติจาก blueprintctl
+# ห้ามแก้ manual — แก้ที่ tenant.yaml แล้วรัน blueprintctl sync
+# ============================================================
+
+# 1. namespace.yaml
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tenant-TENANT_NAME
+  labels:
+    tenant: TENANT_NAME
+    plan: PLAN_NAME
+    # Labels สำหรับ billing/monitoring
+    kube-saas/tenant: TENANT_NAME
+    kube-saas/plan: PLAN_NAME
+    kube-saas/billing-id: BILLING_ID
+  annotations:
+    kube-saas/created-at: "CREATED_AT"
+    kube-saas/contact-email: TENANT_EMAIL
+    kube-saas/domain: TENANT_DOMAIN

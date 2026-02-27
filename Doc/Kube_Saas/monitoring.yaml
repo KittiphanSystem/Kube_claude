@@ -1,0 +1,165 @@
+# platform/monitoring/monitoring.yaml
+# kube-prometheus-stack + Grafana แยก dashboard ต่อ tenant
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    app.kubernetes.io/name: monitoring
+---
+# Grafana Admin Ingress (Admin portal — nginx-admin class)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-admin
+  namespace: monitoring
+  annotations:
+    kubernetes.io/ingress.class: nginx-admin
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/auth-signin: "https://admin.example.com/oauth2/sign_in"
+spec:
+  ingressClassName: nginx-admin
+  tls:
+    - hosts:
+        - grafana.example.com
+      secretName: grafana-admin-tls
+  rules:
+    - host: grafana.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus-grafana
+                port:
+                  number: 80
+---
+# Grafana ConfigMap สำหรับ Anonymous Access เฉพาะ tenant dashboards
+# Tenant เข้า grafana.example.com/d/tenant-<n> ผ่าน portal embed
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-tenant-config
+  namespace: monitoring
+data:
+  grafana.ini: |
+    [server]
+    root_url = https://grafana.example.com
+
+    [auth]
+    disable_login_form = false
+
+    [auth.anonymous]
+    # เปิด anonymous แต่จำกัดด้วย Dashboard UID
+    enabled = true
+    org_name = Tenants
+    org_role = Viewer
+
+    [security]
+    allow_embedding = true    # อนุญาต embed ใน tenant portal
+
+    [feature_toggles]
+    enable = publicDashboards
+
+    [users]
+    auto_assign_org = true
+    auto_assign_org_id = 1
+---
+# PrometheusRule: แยก alert ต่อ tenant ด้วย namespace label
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: tenant-alerts
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+    - name: tenant.resource-usage
+      rules:
+        # Alert เมื่อ tenant ใช้ CPU เกิน 80% ของ quota
+        - alert: TenantHighCPUUsage
+          expr: |
+            sum by (namespace) (
+              rate(container_cpu_usage_seconds_total{namespace=~"tenant-.*"}[5m])
+            ) /
+            sum by (namespace) (
+              kube_resourcequota{namespace=~"tenant-.*", resource="limits.cpu", type="hard"}
+            ) > 0.8
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Tenant {{ $labels.namespace }} CPU usage > 80%"
+            description: "Tenant is using {{ $value | humanizePercentage }} of CPU quota"
+
+        - alert: TenantHighMemoryUsage
+          expr: |
+            sum by (namespace) (
+              container_memory_working_set_bytes{namespace=~"tenant-.*"}
+            ) /
+            sum by (namespace) (
+              kube_resourcequota{namespace=~"tenant-.*", resource="limits.memory", type="hard"}
+            ) > 0.8
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Tenant {{ $labels.namespace }} Memory usage > 80%"
+---
+# Grafana Dashboard: Tenant Overview (JSON template)
+# blueprintctl จะ copy และสร้าง dashboard แยกต่อ tenant
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-tenant-template
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  tenant-overview.json: |
+    {
+      "title": "Tenant Overview — ${TENANT_NAME}",
+      "uid": "tenant-${TENANT_NAME}",
+      "tags": ["tenant", "${TENANT_NAME}"],
+      "templating": {
+        "list": [{
+          "name": "namespace",
+          "type": "constant",
+          "current": {"value": "tenant-${TENANT_NAME}"}
+        }]
+      },
+      "panels": [
+        {
+          "title": "CPU Usage",
+          "type": "graph",
+          "targets": [{
+            "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"tenant-${TENANT_NAME}\"}[5m]))"
+          }]
+        },
+        {
+          "title": "Memory Usage",
+          "type": "graph",
+          "targets": [{
+            "expr": "sum(container_memory_working_set_bytes{namespace=\"tenant-${TENANT_NAME}\"})"
+          }]
+        },
+        {
+          "title": "Pod Count",
+          "type": "stat",
+          "targets": [{
+            "expr": "count(kube_pod_info{namespace=\"tenant-${TENANT_NAME}\"})"
+          }]
+        },
+        {
+          "title": "HTTP Request Rate",
+          "type": "graph",
+          "targets": [{
+            "expr": "sum(rate(nginx_ingress_controller_requests{namespace=\"tenant-${TENANT_NAME}\"}[5m]))"
+          }]
+        }
+      ]
+    }

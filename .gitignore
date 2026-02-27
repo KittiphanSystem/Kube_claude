@@ -1,0 +1,21 @@
+# Binaries
+blueprintctl/blueprintctl
+*.exe
+
+# Go
+blueprintctl/*.test
+blueprintctl/vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local overrides (ถ้าใช้)
+*.local.yaml
+.env.local

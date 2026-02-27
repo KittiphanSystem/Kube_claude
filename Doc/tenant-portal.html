@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tenant Portal — acme-corp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f3ef;
+    --bg-card: #ffffff;
+    --bg-subtle: #eeecea;
+    --bg-hover: #e8e6e1;
+    --border: #dddbd5;
+    --border-mid: #c8c5be;
+    --text-0: #1a1916;
+    --text-1: #5a5751;
+    --text-2: #9a9791;
+    --accent: #1a6b3c;
+    --accent-bg: #edf7f1;
+    --accent-mid: #b8dfc8;
+    --warn: #92590a;
+    --warn-bg: #fef7ee;
+    --err: #9a1f1f;
+    --err-bg: #fdf2f2;
+    --info: #1a4a7a;
+    --info-bg: #eef3fa;
+    --serif: 'Instrument Serif', Georgia, serif;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-0);
+    font-family: var(--sans);
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    height: 56px;
+    gap: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-brand {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-right: 8px;
+  }
+  .brand-app {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--text-0);
+    font-style: italic;
+  }
+  .brand-sep { color: var(--border-mid); font-size: 16px; }
+  .brand-tenant {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-mid);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-weight: 500;
+  }
+
+  .nav-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-1);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    height: 34px;
+  }
+  .nav-tab:hover { background: var(--bg-subtle); color: var(--text-0); }
+  .nav-tab.active {
+    background: var(--text-0);
+    color: white;
+    font-weight: 500;
+  }
+  .nav-tab .tab-icon { font-size: 13px; }
+  .badge-count {
+    background: var(--err);
+    color: white;
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 10px;
+    line-height: 1.4;
+  }
+
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .plan-pill {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .plan-pill .plan-name { color: var(--text-0); font-weight: 500; }
+  .user-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .user-area:hover { background: var(--bg-subtle); }
+  .user-ava {
+    width: 26px; height: 26px;
+    background: var(--text-0);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: white;
+  }
+  .user-name { font-size: 12px; font-weight: 500; color: var(--text-0); }
+
+  /* Layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 210px 1fr;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    padding: 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sidebar-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 0 8px;
+    margin: 12px 0 6px;
+  }
+  .sidebar-label:first-child { margin-top: 0; }
+  .side-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-1);
+    font-size: 13px;
+    transition: all 0.12s;
+    text-decoration: none;
+  }
+  .side-item:hover { background: var(--bg-subtle); color: var(--text-0); }
+  .side-item.active { background: var(--text-0); color: white; }
+  .side-item.active .side-icon { color: white; }
+  .side-icon { font-size: 14px; width: 16px; text-align: center; color: var(--text-2); }
+  .side-badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-2);
+  }
+  .side-badge.warn { color: var(--warn); }
+
+  /* Sidebar quota widget */
+  .quota-box {
+    margin-top: auto;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .quota-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .quota-item { margin-bottom: 10px; }
+  .quota-item:last-child { margin-bottom: 0; }
+  .quota-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 5px;
+  }
+  .quota-label { font-size: 11px; color: var(--text-1); }
+  .quota-val { font-family: var(--mono); font-size: 10px; color: var(--text-0); }
+  .quota-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .quota-fill { height: 100%; border-radius: 2px; }
+  .quota-fill.ok { background: var(--accent); }
+  .quota-fill.warn { background: var(--warn); }
+  .quota-fill.crit { background: var(--err); }
+
+  /* Main content */
+  .content {
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  /* Page header */
+  .page-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .page-title {
+    font-family: var(--serif);
+    font-size: 26px;
+    color: var(--text-0);
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .page-subtitle {
+    font-size: 12px;
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* Stat cards */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .stat:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .stat-num {
+    font-family: var(--serif);
+    font-size: 32px;
+    color: var(--text-0);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-num.ok { color: var(--accent); }
+  .stat-num.warn { color: var(--warn); }
+  .stat-num.err { color: var(--err); }
+  .stat-note { font-size: 11px; color: var(--text-2); }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; margin-bottom: 14px; }
+
+  /* Card */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-0);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title-icon { font-size: 14px; }
+  .card-actions { display: flex; gap: 8px; align-items: center; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    font-family: var(--sans);
+  }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    color: var(--text-1);
+  }
+  .btn-outline:hover { border-color: var(--text-0); color: var(--text-0); background: var(--bg-subtle); }
+  .btn-primary {
+    background: var(--text-0);
+    color: white;
+  }
+  .btn-primary:hover { background: #2d2b27; }
+  .btn-accent {
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-mid);
+    color: var(--accent);
+  }
+  .btn-accent:hover { background: #daf0e7; }
+
+  /* Tag */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 400;
+  }
+  .tag-ok { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-mid); }
+  .tag-warn { background: var(--warn-bg); color: var(--warn); border: 1px solid #f5d9a8; }
+  .tag-err { background: var(--err-bg); color: var(--err); border: 1px solid #f5c5c5; }
+  .tag-info { background: var(--info-bg); color: var(--info); border: 1px solid #b8d0eb; }
+  .tag-neutral { background: var(--bg-subtle); color: var(--text-1); border: 1px solid var(--border); }
+
+  /* Deployment table */
+  .table { width: 100%; border-collapse: collapse; }
+  .table th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    font-weight: 400;
+  }
+  .table td {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-1);
+    vertical-align: middle;
+  }
+  .table tr:last-child td { border-bottom: none; }
+  .table tr:hover td { background: var(--bg-subtle); }
+
+  .dep-name { font-size: 13px; font-weight: 500; color: var(--text-0); margin-bottom: 2px; }
+  .dep-image { font-family: var(--mono); font-size: 10px; color: var(--text-2); }
+
+  .replica-dots { display: flex; gap: 3px; }
+  .replica-dot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+  .replica-dot.down { background: var(--border); }
+
+  .action-row { display: flex; gap: 6px; }
+
+  /* Pods */
+  .pod-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 14px; }
+  .pod-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    transition: all 0.12s;
+    cursor: pointer;
+  }
+  .pod-card:hover { border-color: var(--border-mid); background: var(--bg-subtle); }
+  .pod-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .pod-name { font-family: var(--mono); font-size: 10px; color: var(--text-0); font-weight: 500; }
+  .pod-status { display: flex; align-items: center; gap: 4px; }
+  .pod-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .pod-dot.running { background: var(--accent); }
+  .pod-dot.pending { background: var(--warn); animation: pulse 1.5s infinite; }
+  .pod-dot.failed { background: var(--err); }
+  .pod-stat { font-size: 10px; color: var(--text-2); display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .pod-bar { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
+  .pod-fill { height: 100%; border-radius: 1px; background: var(--accent); }
+
+  /* Log viewer */
+  .log-viewer {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #4a4a4a;
+    background: var(--text-0);
+    color: #c9d1d9;
+    padding: 16px;
+    min-height: 160px;
+    overflow-y: auto;
+    line-height: 1.7;
+  }
+  .log-line-num { color: #484f58; margin-right: 12px; user-select: none; }
+  .log-time-str { color: #8b949e; }
+  .log-info { color: #79c0ff; }
+  .log-ok { color: #56d364; }
+  .log-warn { color: #e3b341; }
+  .log-err { color: #f85149; }
+
+  .log-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+  }
+  .log-select {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 4px 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-0);
+    outline: none;
+  }
+
+  /* Grafana embed placeholder */
+  .grafana-embed {
+    background: linear-gradient(145deg, var(--bg-subtle), var(--bg));
+    border-radius: 6px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .metric-label { font-family: var(--mono); font-size: 9px; color: var(--text-2); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
+  .metric-value { font-family: var(--serif); font-size: 24px; color: var(--text-0); margin-bottom: 2px; }
+  .metric-change { font-size: 10px; }
+  .metric-change.up { color: var(--accent); }
+  .metric-change.dn { color: var(--err); }
+
+  /* Mini sparkline */
+  .mini-spark { height: 32px; display: flex; align-items: flex-end; gap: 2px; }
+  .ms-bar { flex: 1; background: var(--accent-bg); border-top: 1px solid var(--accent-mid); border-radius: 1px 1px 0 0; min-height: 2px; }
+
+  /* ArgoCD app status */
+  .app-status-list { padding: 0; }
+  .app-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .app-row:last-child { border-bottom: none; }
+  .app-icon {
+    width: 32px; height: 32px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .app-info { flex: 1; }
+  .app-name { font-size: 12px; font-weight: 600; color: var(--text-0); margin-bottom: 2px; }
+  .app-meta { font-family: var(--mono); font-size: 10px; color: var(--text-2); }
+  .sync-btn {
+    background: none;
+    border: 1px solid var(--border-mid);
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-1);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .sync-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+  /* Empty state */
+  .empty {
+    padding: 32px;
+    text-align: center;
+    color: var(--text-2);
+    font-size: 12px;
+  }
+  .empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-2);
+    margin-bottom: 16px;
+  }
+  .breadcrumb a { color: var(--text-2); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--text-0); }
+  .breadcrumb-sep { color: var(--border-mid); }
+  .breadcrumb-cur { color: var(--text-0); }
+
+  /* Animations */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .stat { animation: fadeIn 0.3s ease both; }
+  .stat:nth-child(1) { animation-delay: 0.04s; }
+  .stat:nth-child(2) { animation-delay: 0.08s; }
+  .stat:nth-child(3) { animation-delay: 0.12s; }
+  .stat:nth-child(4) { animation-delay: 0.16s; }
+  .card { animation: fadeIn 0.35s ease both; animation-delay: 0.2s; }
+
+  /* Alert banner */
+  .alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    background: var(--warn-bg);
+    border: 1px solid #f5d9a8;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--warn);
+    margin-bottom: 16px;
+  }
+
+  /* Domain link chip */
+  .domain-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--info-bg);
+    border: 1px solid #b8d0eb;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--info);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .domain-chip:hover { background: #daeaf8; }
+
+  input[type=text], select {
+    outline: none;
+    font-family: var(--sans);
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-brand">
+    <span class="brand-app">KubeSaaS</span>
+    <span class="brand-sep">/</span>
+    <span class="brand-tenant">tenant-acme-corp</span>
+  </div>
+
+  <button class="nav-tab active" onclick="setTab(this)">
+    <span class="tab-icon">⬡</span> Overview
+  </button>
+  <button class="nav-tab" onclick="setTab(this)">
+    <span class="tab-icon">↑</span> Deployments
+  </button>
+  <button class="nav-tab" onclick="setTab(this)">
+    <span class="tab-icon">◉</span> Pods
+    <span class="badge-count">8</span>
+  </button>
+  <button class="nav-tab" onclick="setTab(this)">
+    <span class="tab-icon">≡</span> Logs
+  </button>
+  <button class="nav-tab" onclick="setTab(this)">
+    <span class="tab-icon">▦</span> Metrics
+  </button>
+  <button class="nav-tab" onclick="setTab(this)">
+    <span class="tab-icon">→</span> Ingress
+  </button>
+
+  <div class="header-right">
+    <div class="domain-chip">🔗 app.acme-corp.com</div>
+    <div class="plan-pill">
+      Plan <span class="plan-name">enterprise</span>
+    </div>
+    <div class="user-area">
+      <div class="user-ava">WP</div>
+      <span class="user-name">wichai.p</span>
+    </div>
+  </div>
+</header>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-label">Apps</div>
+    <a class="side-item active">
+      <span class="side-icon">⬡</span> Overview
+    </a>
+    <a class="side-item">
+      <span class="side-icon">↑</span> Deployments
+      <span class="side-badge">6</span>
+    </a>
+    <a class="side-item">
+      <span class="side-icon">◉</span> Pods
+      <span class="side-badge">8</span>
+    </a>
+    <a class="side-item">
+      <span class="side-icon">⊞</span> Services
+    </a>
+    <a class="side-item">
+      <span class="side-icon">→</span> Ingress
+    </a>
+    <a class="side-item">
+      <span class="side-icon">🔒</span> Secrets
+    </a>
+
+    <div class="sidebar-label">Monitoring</div>
+    <a class="side-item">
+      <span class="side-icon">▦</span> Metrics
+    </a>
+    <a class="side-item">
+      <span class="side-icon">≡</span> Logs
+    </a>
+    <a class="side-item">
+      <span class="side-icon">🔔</span> Alerts
+      <span class="side-badge warn">1</span>
+    </a>
+
+    <div class="sidebar-label">GitOps</div>
+    <a class="side-item">
+      <span class="side-icon">↻</span> ArgoCD Apps
+    </a>
+    <a class="side-item">
+      <span class="side-icon">◈</span> Release History
+    </a>
+
+    <!-- Quota widget -->
+    <div class="quota-box">
+      <div class="quota-title">Resource Quota</div>
+
+      <div class="quota-item">
+        <div class="quota-row">
+          <span class="quota-label">CPU</span>
+          <span class="quota-val">3.4 / 8 cores</span>
+        </div>
+        <div class="quota-bar"><div class="quota-fill ok" style="width:42%"></div></div>
+      </div>
+
+      <div class="quota-item">
+        <div class="quota-row">
+          <span class="quota-label">Memory</span>
+          <span class="quota-val">5.6 / 16 GB</span>
+        </div>
+        <div class="quota-bar"><div class="quota-fill ok" style="width:35%"></div></div>
+      </div>
+
+      <div class="quota-item">
+        <div class="quota-row">
+          <span class="quota-label">Pods</span>
+          <span class="quota-val">8 / 80</span>
+        </div>
+        <div class="quota-bar"><div class="quota-fill ok" style="width:10%"></div></div>
+      </div>
+
+      <div class="quota-item">
+        <div class="quota-row">
+          <span class="quota-label">Storage</span>
+          <span class="quota-val">120 / 1000 GB</span>
+        </div>
+        <div class="quota-bar"><div class="quota-fill ok" style="width:12%"></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+      <a href="#">portal.example.com</a>
+      <span class="breadcrumb-sep">/</span>
+      <a href="#">tenant-acme-corp</a>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-cur">overview</span>
+    </div>
+
+    <!-- Page header -->
+    <div class="page-head">
+      <div>
+        <div class="page-title">Good morning, <em>acme-corp</em></div>
+        <div class="page-subtitle">
+          <div class="live-dot"></div>
+          namespace: tenant-acme-corp · Last sync 2 min ago
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline">↻ Force Sync</button>
+        <button class="btn btn-primary">+ Deploy</button>
+      </div>
+    </div>
+
+    <!-- Alert -->
+    <div class="alert-banner">
+      <span>⚡</span>
+      <span><strong>api-service</strong> deployment is out-of-sync with Git — <u style="cursor:pointer">sync now</u></span>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-label">Running Pods</div>
+        <div class="stat-num ok">8</div>
+        <div class="stat-note">of 8 scheduled</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Deployments</div>
+        <div class="stat-num">6</div>
+        <div class="stat-note">5 healthy · <span style="color:var(--warn)">1 pending</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Req / min</div>
+        <div class="stat-num">2.4k</div>
+        <div class="stat-note" style="color:var(--accent)">↑ 12% vs last hour</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Error Rate</div>
+        <div class="stat-num ok">0.3%</div>
+        <div class="stat-note">p99 latency 84ms</div>
+      </div>
+    </div>
+
+    <!-- Deployments + ArgoCD -->
+    <div class="grid-3">
+      <!-- Deployments table -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">
+            <span class="card-title-icon">↑</span> Deployments
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-outline btn-sm">Filter</button>
+          </div>
+        </div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Replicas</th>
+              <th>Status</th>
+              <th>Updated</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="dep-name">web-frontend</div>
+                <div class="dep-image">nginx:1.25.3</div>
+              </td>
+              <td>
+                <div class="replica-dots">
+                  <div class="replica-dot"></div>
+                  <div class="replica-dot"></div>
+                  <div class="replica-dot"></div>
+                </div>
+                <div style="font-family:var(--mono);font-size:9px;color:var(--text-2);margin-top:4px">3/3</div>
+              </td>
+              <td><span class="tag tag-ok">● running</span></td>
+              <td style="font-family:var(--mono);font-size:10px">2m ago</td>
+              <td>
+                <div class="action-row">
+                  <button class="btn btn-outline btn-sm">Logs</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="dep-name">api-service</div>
+                <div class="dep-image">node:20-alpine</div>
+              </td>
+              <td>
+                <div class="replica-dots">
+                  <div class="replica-dot"></div>
+                  <div class="replica-dot"></div>
+                  <div class="replica-dot down"></div>
+                </div>
+                <div style="font-family:var(--mono);font-size:9px;color:var(--warn);margin-top:4px">2/3</div>
+              </td>
+              <td><span class="tag tag-warn">↻ rolling</span></td>
+              <td style="font-family:var(--mono);font-size:10px">now</td>
+              <td>
+                <div class="action-row">
+                  <button class="btn btn-outline btn-sm">Logs</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="dep-name">worker</div>
+                <div class="dep-image">python:3.12-slim</div>
+              </td>
+              <td>
+                <div class="replica-dots">
+                  <div class="replica-dot"></div>
+                  <div class="replica-dot"></div>
+                </div>
+                <div style="font-family:var(--mono);font-size:9px;color:var(--text-2);margin-top:4px">2/2</div>
+              </td>
+              <td><span class="tag tag-ok">● running</span></td>
+              <td style="font-family:var(--mono);font-size:10px">41m ago</td>
+              <td>
+                <div class="action-row">
+                  <button class="btn btn-outline btn-sm">Logs</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="dep-name">redis-cache</div>
+                <div class="dep-image">redis:7.2-alpine</div>
+              </td>
+              <td>
+                <div class="replica-dots">
+                  <div class="replica-dot"></div>
+                </div>
+                <div style="font-family:var(--mono);font-size:9px;color:var(--text-2);margin-top:4px">1/1</div>
+              </td>
+              <td><span class="tag tag-ok">● running</span></td>
+              <td style="font-family:var(--mono);font-size:10px">3h ago</td>
+              <td>
+                <div class="action-row">
+                  <button class="btn btn-outline btn-sm">Logs</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ArgoCD Apps for this tenant -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">
+            <span class="card-title-icon">↻</span> GitOps Status
+          </div>
+          <span class="tag tag-neutral" style="font-size:9px">via ArgoCD</span>
+        </div>
+        <div class="app-status-list">
+          <div class="app-row">
+            <div class="app-icon">🌐</div>
+            <div class="app-info">
+              <div class="app-name">acme-corp-apps</div>
+              <div class="app-meta">main · environments/prod</div>
+            </div>
+            <span class="tag tag-ok">synced</span>
+            <button class="sync-btn">↻ Sync</button>
+          </div>
+          <div class="app-row">
+            <div class="app-icon">⚙️</div>
+            <div class="app-info">
+              <div class="app-name">acme-corp-infra</div>
+              <div class="app-meta">main · environments/infra</div>
+            </div>
+            <span class="tag tag-warn">out-of-sync</span>
+            <button class="sync-btn">↻ Sync</button>
+          </div>
+          <div class="app-row">
+            <div class="app-icon">📦</div>
+            <div class="app-info">
+              <div class="app-name">acme-corp-jobs</div>
+              <div class="app-meta">main · environments/jobs</div>
+            </div>
+            <span class="tag tag-ok">synced</span>
+            <button class="sync-btn">↻ Sync</button>
+          </div>
+        </div>
+
+        <!-- Release history mini -->
+        <div style="border-top:1px solid var(--border);padding:12px 18px;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text-2);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Recent Releases</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:10px;font-size:11px;">
+              <span class="tag tag-ok" style="font-size:9px">v2.4.1</span>
+              <span style="color:var(--text-1)">api-service updated</span>
+              <span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text-2)">2m ago</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:11px;">
+              <span class="tag tag-neutral" style="font-size:9px">v1.9.0</span>
+              <span style="color:var(--text-1)">worker deployed</span>
+              <span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text-2)">41m ago</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:11px;">
+              <span class="tag tag-neutral" style="font-size:9px">v3.1.2</span>
+              <span style="color:var(--text-1)">web-frontend scaled</span>
+              <span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text-2)">3h ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics + Logs -->
+    <div class="grid-2">
+      <!-- Metrics mini -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">
+            <span class="card-title-icon">▦</span> Metrics — last 1h
+          </div>
+          <button class="btn btn-accent btn-sm">Open Grafana ↗</button>
+        </div>
+        <div style="padding:16px;">
+          <div class="metric-row">
+            <div class="metric-card">
+              <div class="metric-label">CPU avg</div>
+              <div class="metric-value">42%</div>
+              <div class="metric-change up">↑ stable</div>
+              <div class="mini-spark" style="margin-top:8px">
+                <div class="ms-bar" style="height:40%"></div>
+                <div class="ms-bar" style="height:45%"></div>
+                <div class="ms-bar" style="height:38%"></div>
+                <div class="ms-bar" style="height:50%"></div>
+                <div class="ms-bar" style="height:55%"></div>
+                <div class="ms-bar" style="height:42%"></div>
+                <div class="ms-bar" style="height:40%"></div>
+                <div class="ms-bar" style="height:44%"></div>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Mem avg</div>
+              <div class="metric-value">35%</div>
+              <div class="metric-change up">5.6 GB used</div>
+              <div class="mini-spark" style="margin-top:8px">
+                <div class="ms-bar" style="height:30%"></div>
+                <div class="ms-bar" style="height:33%"></div>
+                <div class="ms-bar" style="height:35%"></div>
+                <div class="ms-bar" style="height:34%"></div>
+                <div class="ms-bar" style="height:37%"></div>
+                <div class="ms-bar" style="height:35%"></div>
+                <div class="ms-bar" style="height:36%"></div>
+                <div class="ms-bar" style="height:35%"></div>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Req/min</div>
+              <div class="metric-value">2.4k</div>
+              <div class="metric-change up">↑ 12%</div>
+              <div class="mini-spark" style="margin-top:8px">
+                <div class="ms-bar" style="height:55%"></div>
+                <div class="ms-bar" style="height:60%"></div>
+                <div class="ms-bar" style="height:70%"></div>
+                <div class="ms-bar" style="height:65%"></div>
+                <div class="ms-bar" style="height:80%"></div>
+                <div class="ms-bar" style="height:75%"></div>
+                <div class="ms-bar" style="height:90%"></div>
+                <div class="ms-bar" style="height:100%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live logs -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">
+            <span class="card-title-icon">≡</span> Live Logs
+          </div>
+          <div class="card-actions">
+            <select class="log-select">
+              <option>web-frontend</option>
+              <option>api-service</option>
+              <option>worker</option>
+            </select>
+          </div>
+        </div>
+        <div class="log-viewer">
+          <div><span class="log-line-num">1</span><span class="log-time-str">2024-01-15 09:42:01</span> <span class="log-info">INFO</span>  Server started on :8080</div>
+          <div><span class="log-line-num">2</span><span class="log-time-str">2024-01-15 09:42:03</span> <span class="log-ok">OK</span>    Health check passed</div>
+          <div><span class="log-line-num">3</span><span class="log-time-str">2024-01-15 09:42:10</span> <span class="log-info">INFO</span>  GET /api/users 200 12ms</div>
+          <div><span class="log-line-num">4</span><span class="log-time-str">2024-01-15 09:42:11</span> <span class="log-info">INFO</span>  POST /api/orders 201 45ms</div>
+          <div><span class="log-line-num">5</span><span class="log-time-str">2024-01-15 09:42:15</span> <span class="log-warn">WARN</span>  DB pool near limit: 18/20</div>
+          <div><span class="log-line-num">6</span><span class="log-time-str">2024-01-15 09:42:18</span> <span class="log-info">INFO</span>  GET /api/products 200 8ms</div>
+          <div><span class="log-line-num">7</span><span class="log-time-str">2024-01-15 09:42:22</span> <span class="log-info">INFO</span>  Worker job completed: batch-1234</div>
+          <div><span class="log-line-num">8</span><span class="log-time-str">2024-01-15 09:42:24</span> <span class="log-ok">OK</span>    Cache hit rate: 94.2%</div>
+        </div>
+        <div class="log-controls">
+          <span class="tag tag-ok" style="font-size:9px">● LIVE</span>
+          <button class="btn btn-outline btn-sm">⬇ Download</button>
+          <button class="btn btn-outline btn-sm">⤢ Expand</button>
+          <span style="margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text-2)">tail -f · 8 lines</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pods grid -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">
+          <span class="card-title-icon">◉</span> Pods
+          <span class="tag tag-ok" style="margin-left:4px;">8 running</span>
+        </div>
+      </div>
+      <div class="pod-grid">
+        <div class="pod-card">
+          <div class="pod-card-head">
+            <div class="pod-name">web-frontend-7d9b8c-xk2p9</div>
+            <div class="pod-status">
+              <div class="pod-dot running"></div>
+              <span class="tag tag-ok" style="font-size:9px">Running</span>
+            </div>
+          </div>
+          <div class="pod-stat"><span>CPU</span><span>120m / 500m</span></div>
+          <div class="pod-bar"><div class="pod-fill" style="width:24%"></div></div>
+          <div class="pod-stat" style="margin-top:5px"><span>Mem</span><span>256Mi / 512Mi</span></div>
+          <div class="pod-bar"><div class="pod-fill" style="width:50%"></div></div>
+        </div>
+        <div class="pod-card">
+          <div class="pod-card-head">
+            <div class="pod-name">api-service-5f8d4c-mn7vq</div>
+            <div class="pod-status">
+              <div class="pod-dot running"></div>
+              <span class="tag tag-ok" style="font-size:9px">Running</span>
+            </div>
+          </div>
+          <div class="pod-stat"><span>CPU</span><span>340m / 1000m</span></div>
+          <div class="pod-bar"><div class="pod-fill" style="width:34%"></div></div>
+          <div class="pod-stat" style="margin-top:5px"><span>Mem</span><span>512Mi / 1Gi</span></div>
+          <div class="pod-bar"><div class="pod-fill" style="width:50%"></div></div>
+        </div>
+        <div class="pod-card">
+          <div class="pod-card-head">
+            <div class="pod-name">api-service-5f8d4c-k8rt2</div>
+            <div class="pod-status">
+              <div class="pod-dot pending"></div>
+              <span class="tag tag-warn" style="font-size:9px">Pending</span>
+            </div>
+          </div>
+          <div class="pod-stat"><span>CPU</span><span>0m / 1000m</span></div>
+          <div class="pod-bar"><div class="pod-fill" style="width:0%"></div></div>
+          <div class="pod-stat" style="margin-top:5px"><span>Mem</span><span>0Mi / 1Gi</span></div>
+          <div class="pod-bar"><div class="pod-fill" style="width:0%"></div></div>
+        </div>
+        <div class="pod-card">
+          <div class="pod-card-head">
+            <div class="pod-name">worker-6c9f7b-p4nw8</div>
+            <div class="pod-status">
+              <div class="pod-dot running"></div>
+              <span class="tag tag-ok" style="font-size:9px">Running</span>
+            </div>
+          </div>
+          <div class="pod-stat"><span>CPU</span><span>80m / 500m</span></div>
+          <div class="pod-bar"><div class="pod-fill" style="width:16%"></div></div>
+          <div class="pod-stat" style="margin-top:5px"><span>Mem</span><span>180Mi / 512Mi</span></div>
+          <div class="pod-bar"><div class="pod-fill" style="width:35%"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+function setTab(el) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>

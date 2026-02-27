@@ -1,0 +1,107 @@
+# platform/devtron/namespace.yaml
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devtroncd
+  labels:
+    app.kubernetes.io/name: devtron
+    kube-saas/role: admin-portal
+---
+# platform/devtron/ingress-admin.yaml
+# Admin Portal — เข้าได้จาก admin.example.com เท่านั้น
+# ใช้ ingress class nginx-admin (แยกจาก tenant ingress)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: devtron-admin-portal
+  namespace: devtroncd
+  annotations:
+    # ใช้ admin ingress class — admin tools เท่านั้น
+    kubernetes.io/ingress.class: nginx-admin
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Block การเข้าถึงจาก tenant network
+    nginx.ingress.kubernetes.io/whitelist-source-range: "0.0.0.0/0"  # ปรับเป็น IP admin จริง
+    nginx.ingress.kubernetes.io/auth-realm: "Admin Portal — Restricted"
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      add_header Content-Security-Policy "default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src * data:;" always;
+spec:
+  ingressClassName: nginx-admin
+  tls:
+    - hosts:
+        - admin.example.com
+      secretName: devtron-admin-tls
+  rules:
+    - host: admin.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: devtron-service
+                port:
+                  number: 80
+---
+# platform/devtron/argocd-ingress.yaml
+# ArgoCD UI — Admin only (ผ่าน nginx-admin class)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-admin
+  namespace: argocd
+  annotations:
+    kubernetes.io/ingress.class: nginx-admin
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+spec:
+  ingressClassName: nginx-admin
+  tls:
+    - hosts:
+        - argo.example.com
+      secretName: argocd-tls
+  rules:
+    - host: argo.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 443
+---
+# platform/devtron/devtron-rbac-configmap.yaml
+# Devtron RBAC — แยก admin กับ tenant ชัดเจน
+# Devtron ใช้ Casbin-based RBAC ผ่าน ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devtron-custom-rbac
+  namespace: devtroncd
+data:
+  # Policy: admin มีสิทธิ์ทุกอย่าง
+  # Policy: tenant user เห็นเฉพาะ namespace/app ของตัวเอง
+  policy.csv: |
+    # Platform Admin: สิทธิ์เต็ม
+    p, role:admin, applications, *, */*, allow
+    p, role:admin, clusters, *, *, allow
+    p, role:admin, repositories, *, *, allow
+    p, role:admin, projects, *, *, allow
+    p, role:admin, accounts, *, *, allow
+
+    # Tenant Viewer: ดูได้เฉพาะ app ของ tenant ตัวเอง
+    # (จะ generate แยกต่อ tenant โดย blueprintctl)
+    p, role:tenant-a-viewer, applications, get, tenant-a/*, allow
+    p, role:tenant-a-viewer, applications, sync, tenant-a/*, allow
+
+    # Group mapping
+    g, platform-admins, role:admin
+
+  policy.default: role:readonly

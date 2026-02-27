@@ -1,0 +1,90 @@
+# tenants/tenant-template/bootstrap/rbac.yaml
+# RBAC สำหรับ tenant — แยก viewer และ deployer
+---
+# Role: tenant อ่านได้ทุกอย่างในนาม namespace ตัวเอง
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tenant-viewer
+  namespace: tenant-TENANT_NAME
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "configmaps", "events", "endpoints"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "replicasets", "daemonsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch"]
+---
+# Role: tenant deployer (อัพเดต deployment ได้)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tenant-deployer
+  namespace: tenant-TENANT_NAME
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec", "services", "events", "endpoints"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+# RoleBinding: Tenant Viewers
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tenant-viewers-binding
+  namespace: tenant-TENANT_NAME
+subjects:
+  - kind: Group
+    name: tenant-TENANT_NAME-viewers
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: tenant-viewer
+  apiGroup: rbac.authorization.k8s.io
+---
+# RoleBinding: Tenant Deployers
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tenant-deployers-binding
+  namespace: tenant-TENANT_NAME
+subjects:
+  - kind: Group
+    name: tenant-TENANT_NAME-deployers
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: tenant-deployer
+  apiGroup: rbac.authorization.k8s.io
+---
+# RoleBinding: Tenant Portal ServiceAccount (อ่านได้สำหรับ portal web app)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tenant-portal-reader-binding
+  namespace: tenant-TENANT_NAME
+subjects:
+  - kind: ServiceAccount
+    name: tenant-portal-sa
+    namespace: devtroncd
+roleRef:
+  kind: ClusterRole
+  name: tenant-portal-reader
+  apiGroup: rbac.authorization.k8s.io

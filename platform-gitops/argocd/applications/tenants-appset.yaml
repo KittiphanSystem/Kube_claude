@@ -1,0 +1,37 @@
+# argocd/applications/tenants-appset.yaml
+# ApplicationSet — Auto-generate ArgoCD Application สำหรับทุก tenant
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenants
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/KittiphanSystem/Kube_claude.git
+        revision: main
+        directories:
+          - path: tenants/*/bootstrap
+  template:
+    metadata:
+      name: "{{path.basenameNormalized}}-bootstrap"
+      namespace: argocd
+      annotations:
+        argocd.argoproj.io/sync-wave: "5"
+    spec:
+      project: platform
+      source:
+        repoURL: https://github.com/KittiphanSystem/Kube_claude.git
+        targetRevision: main
+        path: "{{path}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: ""
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

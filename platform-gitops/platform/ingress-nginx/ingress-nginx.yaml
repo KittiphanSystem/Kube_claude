@@ -1,0 +1,28 @@
+# platform/ingress-nginx/ingress-nginx.yaml
+# แยก ingress class สำหรับ admin และ tenant
+# หมายเหตุ: ต้องติดตั้ง ingress-nginx controller (RBAC, ServiceAccount) จาก official manifest ก่อน หรือใช้ Helm
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-nginx
+  labels:
+    kubernetes.io/metadata.name: ingress-nginx
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: nginx-admin
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "false"
+spec:
+  controller: k8s.io/ingress-nginx-admin
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: nginx
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+spec:
+  controller: k8s.io/ingress-nginx

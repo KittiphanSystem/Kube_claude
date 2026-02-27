@@ -1,0 +1,87 @@
+# argocd/applications/root-app.yaml
+# Root App-of-Apps — จัดการ application ทั้งหมดในระบบ
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root-app
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: platform
+  source:
+    repoURL: https://git.example.com/platform-gitops.git
+    targetRevision: main
+    path: argocd/applications
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+# argocd/applications/platform-app.yaml
+# App ที่คุม platform services (ingress, cert, monitoring, devtron)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-services
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform
+  source:
+    repoURL: https://git.example.com/platform-gitops.git
+    targetRevision: main
+    path: platform
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: false   # ระวัง — platform services ไม่ควร prune อัตโนมัติ
+      selfHeal: true
+---
+# argocd/applications/tenants-appset.yaml
+# ApplicationSet — Auto-generate ArgoCD Application สำหรับทุก tenant
+# เมื่อเพิ่มโฟลเดอร์ใน tenants/ ระบบจะ onboard อัตโนมัติ
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenants
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  generators:
+    - git:
+        repoURL: https://git.example.com/platform-gitops.git
+        revision: main
+        directories:
+          - path: tenants/*/bootstrap
+  template:
+    metadata:
+      name: "{{path.basenameNormalized}}-bootstrap"
+      namespace: argocd
+      annotations:
+        argocd.argoproj.io/sync-wave: "5"
+    spec:
+      project: platform
+      source:
+        repoURL: https://git.example.com/platform-gitops.git
+        targetRevision: main
+        path: "{{path}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: argocd
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

@@ -1,0 +1,128 @@
+# tenants/tenant-template/bootstrap/networkpolicy.yaml
+# NetworkPolicy ครบถ้วน — default deny + allow rules จำเป็น
+---
+# 1. Default Deny All (Ingress + Egress)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: tenant-TENANT_NAME
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# 2. Allow DNS (CRITICAL — ไม่มีนี้ pod ทำงานไม่ได้เลย)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: tenant-TENANT_NAME
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+# 3. Allow Ingress Traffic จาก Ingress Controller (tenant class เท่านั้น)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-ingress
+  namespace: tenant-TENANT_NAME
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: tenant   # เฉพาะ tenant ingress, ไม่ใช่ admin
+---
+# 4. Allow Pods คุยกันใน namespace เดียวกัน
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: tenant-TENANT_NAME
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}  # ทุก pod ใน namespace นี้
+  egress:
+    - to:
+        - podSelector: {}  # ทุก pod ใน namespace นี้
+---
+# 5. Allow Egress ออก Internet (HTTP/HTTPS)
+# ถ้าไม่อยากให้ tenant ออก internet ลบ policy นี้ออก
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-internet
+  namespace: tenant-TENANT_NAME
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 80
+          protocol: TCP
+        - port: 443
+          protocol: TCP
+---
+# 6. Allow Prometheus ดึง metrics (จาก monitoring namespace)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: tenant-TENANT_NAME
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - port: 8080    # metrics port (ปรับตาม app จริง)
+        - port: 9090
+        - port: 9091
+---
+# 7. Allow Tenant Portal อ่าน pods/logs
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-tenant-portal
+  namespace: tenant-TENANT_NAME
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: devtroncd
+          podSelector:
+            matchLabels:
+              app: tenant-portal

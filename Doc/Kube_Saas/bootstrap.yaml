@@ -1,0 +1,35 @@
+# clusters/prod/bootstrap.yaml
+# ใช้ kubectl apply ครั้งเดียว — ArgoCD จะจัดการที่เหลือทั้งหมดอัตโนมัติ
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+---
+# ติดตั้ง ArgoCD จาก upstream (ทำครั้งแรกก่อน apply bootstrap app)
+# kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root-app
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://git.example.com/platform-gitops.git
+    targetRevision: main
+    path: argocd/applications
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

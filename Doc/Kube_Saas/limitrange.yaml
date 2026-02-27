@@ -1,0 +1,37 @@
+# tenants/tenant-template/bootstrap/limitrange.yaml
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: tenant-TENANT_NAME-limits
+  namespace: tenant-TENANT_NAME
+  labels:
+    kube-saas/tenant: TENANT_NAME
+spec:
+  limits:
+    # Container defaults (ถ้า tenant ไม่ระบุ requests/limits ใน pod spec จะใช้ค่านี้)
+    - type: Container
+      default:
+        cpu: DEFAULT_CPU_LIMIT
+        memory: DEFAULT_MEM_LIMIT
+      defaultRequest:
+        cpu: DEFAULT_CPU_REQUEST
+        memory: DEFAULT_MEM_REQUEST
+      # ป้องกัน container ขอ resource มากเกินไป
+      max:
+        cpu: MAX_CPU_PER_CONTAINER
+        memory: MAX_MEM_PER_CONTAINER
+      min:
+        cpu: "10m"
+        memory: "16Mi"
+    # Pod-level limits
+    - type: Pod
+      max:
+        cpu: MAX_CPU_PER_POD
+        memory: MAX_MEM_PER_POD
+    # PVC limits
+    - type: PersistentVolumeClaim
+      max:
+        storage: MAX_PVC_SIZE
+      min:
+        storage: "1Gi"

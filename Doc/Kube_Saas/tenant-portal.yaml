@@ -1,0 +1,129 @@
+# platform/devtron/tenant-portal-ingress.yaml
+# Tenant Portal — คนละ URL กับ Admin Portal
+# Tenant เข้า portal.example.com/tenant-<name> ไม่ใช่ admin.example.com
+#
+# สถาปัตยกรรม Tenant Portal:
+#   portal.example.com/tenant-a → ArgoCD API (filtered by project=tenant-a)
+#                                → Grafana embed (datasource=tenant-a namespace)
+#                                → Kubernetes Dashboard (scoped to namespace)
+#
+# Admin Portal:  https://admin.example.com     (ingress class: nginx-admin)
+# Tenant Portal: https://portal.example.com    (ingress class: nginx — tenant class)
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tenant-portal
+  namespace: devtroncd
+  annotations:
+    kubernetes.io/ingress.class: nginx    # Tenant ingress class (ไม่ใช่ admin)
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-Tenant-Portal "true" always;
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - portal.example.com
+      secretName: tenant-portal-tls
+  rules:
+    - host: portal.example.com
+      http:
+        paths:
+          # Tenant Portal UI — อ่านเพิ่มเติมจาก tenant-portal-app (web app แยก)
+          - path: /tenant-a(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: tenant-portal-service
+                port:
+                  number: 3000
+          # Grafana embed สำหรับ tenant (ผ่าน anonymous auth + org isolation)
+          - path: /grafana(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: 3000
+---
+# Tenant Portal Web App — lightweight UI แยกจาก Devtron
+# แสดง: ArgoCD apps ของ tenant เท่านั้น + Grafana embed + Logs
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenant-portal
+  namespace: devtroncd
+  labels:
+    app: tenant-portal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tenant-portal
+  template:
+    metadata:
+      labels:
+        app: tenant-portal
+    spec:
+      serviceAccountName: tenant-portal-sa
+      containers:
+        - name: portal
+          image: ghcr.io/your-org/tenant-portal:latest  # <<< Build จาก /tenant-portal-app
+          ports:
+            - containerPort: 3000
+          env:
+            - name: ARGOCD_SERVER
+              value: "argocd-server.argocd.svc.cluster.local"
+            - name: ARGOCD_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: argocd-tenant-portal-token
+                  key: token
+            - name: GRAFANA_URL
+              value: "http://grafana.monitoring.svc.cluster.local:3000"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tenant-portal-service
+  namespace: devtroncd
+spec:
+  selector:
+    app: tenant-portal
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+# ServiceAccount สำหรับ Tenant Portal (อ่าน ArgoCD apps ของ tenant เท่านั้น)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tenant-portal-sa
+  namespace: devtroncd
+---
+# ClusterRole: อ่าน pods/logs เฉพาะ tenant namespaces
+# (จะ bind กับ namespace เฉพาะ tenant ผ่าน RoleBinding แยกต่อ namespace)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tenant-portal-reader
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]

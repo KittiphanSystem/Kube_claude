@@ -1,0 +1,34 @@
+# tenants/tenant-template/tenant.yaml
+# Descriptor file — blueprintctl อ่านไฟล์นี้เพื่อ generate bootstrap/
+# แก้ไขไฟล์นี้แล้วรัน: blueprintctl tenant sync --name TENANT_NAME
+---
+apiVersion: kube-saas/v1
+kind: Tenant
+metadata:
+  name: TENANT_NAME
+  createdAt: "CREATED_AT"
+spec:
+  # ข้อมูลพื้นฐาน
+  contactEmail: TENANT_EMAIL
+  domain: TENANT_DOMAIN
+  billingId: BILLING_ID
+
+  # Plan (starter / growth / enterprise)
+  plan: PLAN_NAME
+
+  # Git repo ของ tenant (ArgoCD จะ pull จาก repo นี้)
+  repo:
+    url: TENANT_REPO_URL
+    revision: main
+    path: environments/prod
+
+  # Custom quota (ถ้าไม่ระบุ ใช้ default ของ plan)
+  # quotaOverride:
+  #   cpuRequests: "3"
+  #   memRequests: "6Gi"
+
+  # Features
+  features:
+    monitoring: true       # สร้าง Grafana dashboard
+    alerting: true         # สร้าง PrometheusRule
+    portalAccess: true     # เข้า Tenant Portal ได้
